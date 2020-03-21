@@ -1,0 +1,33 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1584741043314.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "A7FAF86A",
+    "lastKnownWriteTime" : 1584739488,
+    "last_content_update" : 1584741043314,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "60555BF8",
+        "caption" : "escuelas",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=escuelas&cache_key=60555BF8",
+        "displayedObservations" : 2862,
+        "environment" : "",
+        "expression" : "escuelas",
+        "object" : "escuelas",
+        "preview" : 0,
+        "totalObservations" : 2862,
+        "variables" : 31
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

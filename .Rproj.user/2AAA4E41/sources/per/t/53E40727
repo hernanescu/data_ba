@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1584737465966.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2574180775",
+    "id" : "53E40727",
+    "lastKnownWriteTime" : 1584627858,
+    "last_content_update" : 1584627858,
+    "path" : "~/Documents/ba_interactiva/app.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "5334,0",
+        "docOutlineVisible" : "1",
+        "scrollLine" : "5352"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 8,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

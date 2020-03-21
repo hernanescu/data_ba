@@ -1,0 +1,33 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1584741988097.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "ED5B4731",
+    "lastKnownWriteTime" : 1584739488,
+    "last_content_update" : 1584741988097,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "13535A99",
+        "caption" : "obras",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=obras&cache_key=13535A99",
+        "displayedObservations" : 1116,
+        "environment" : "",
+        "expression" : "obras",
+        "object" : "obras",
+        "preview" : 0,
+        "totalObservations" : 1116,
+        "variables" : 17
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

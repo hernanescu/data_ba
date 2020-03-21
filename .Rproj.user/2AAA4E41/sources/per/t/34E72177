@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1584718850772.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1920086257",
+    "id" : "34E72177",
+    "lastKnownWriteTime" : 1583849832,
+    "last_content_update" : 1583849832,
+    "path" : "~/Documents/shiny_business/06_stock_analyzer_dynamic_plots.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "248,11",
+        "scrollLine" : "234"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 9,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

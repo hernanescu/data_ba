@@ -1,0 +1,480 @@
+# I - Librerias -----
+library(shiny)
+library(shinyWidgets)
+library(shinythemes)
+library(shinyjs)
+library(shinydashboard)
+library(dashboardthemes)
+
+library(plotly)
+library(tidyquant)
+library(tidyverse)
+library(DT)
+library(openxlsx)
+
+base <- read_csv('data/base_bc2.csv') %>% 
+    mutate(Clusters = dias_cluster + freq_cluster + mv_cluster,
+           Clusters = case_when(Clusters>=5 ~ 5,
+                                TRUE~Clusters),
+           Clusters = as.factor(Clusters))
+
+source(file = 'scripts/00_scripts.R')
+
+# plot_frecuency <- function(base) {
+#     g <- base %>%
+#         filter(cant_productos < 12) %>%
+#         ggplot(., aes(x = Clusters, y = cant_productos))+
+#         geom_boxplot(aes(fill = Clusters))+
+#         labs(x = 'Clusters',
+#              y = 'Cantidad de productos')+
+#         theme_tq()
+#     
+#     ggplotly(g)
+# }
+
+options(scipen = 999999)
+
+# II - UI -----
+
+# II. 1 Inicio ----
+ui <- navbarPage(
+    title = 'Banco Ciudad',
+    windowTitle = 'Banco Ciudad',
+    inverse = FALSE,
+    collapsible = TRUE,
+    
+    theme = shinytheme('cerulean'),
+    
+    tabPanel(
+        'Clientes',
+        shinyjs::useShinyjs(),
+        
+        ###Header de la página ----
+        div(
+            class = "container",
+            id = "header",
+            h1(class = "page-header", "Próxima Mejor Oferta", tags$small("por Corebi - Banco Ciudad")),
+            p(class = "lead", "Shiny App desarrollada para visualizar información relativa al proyecto de Próxima Mejor Oferta.")
+        ),
+        
+        # Display ----
+        div(
+            class = "container hidden-sm hidden-xs",
+            id = "favorite_container",
+            
+            div(
+                class = "",
+                column(
+                    width = 12,
+                    h4(class = "pull-left", "Resumen"),
+                    actionButton(inputId = "favorites_toggle", "Mostrar/Ocultar", class = "pull-right")
+                )
+            ),
+            div(
+                class = "row",
+                id = "favorite_card_section",
+                uiOutput(outputId = "favorite_cards", class = "container")
+            )
+        ),
+        
+        ### body ----
+        div(
+            class = "container",
+            id = "application_ui",
+            column(
+                width = 3, 
+                wellPanel(
+                    div(id = 'filtros_panel',
+                        h3(strong('Filtros'))
+                    ),
+                    hr(),
+                    div(
+                        id = "input_main",
+                        div(
+                            id = 'probabilidad_titulo',
+                            actionButton(inputId = 'probabilidad_btn', 
+                                         label = 'Probabilidad', 
+                                         icon = icon('cog', class = 'fa-1x'),
+                                         class = 'btn-primary btn-medium')
+                        ),
+                        hr(),
+                        div(id = 'probabilidad_input',
+                            selectInput(inputId = 'producto',
+                                        label = 'Producto',
+                                        choices = c('Plazo fijo' = 'pred_pf',
+                                                    'Préstamos personales' = 'pred_pp',
+                                                    'Tarjeta de crédito'='pred_tc')),
+                            br(),
+                            sliderInput(inputId = 'prob',
+                                        label = 'Probabilidad',
+                                        min = 0,
+                                        max = 1,
+                                        value = 0.1)
+                        ) %>% hidden(),
+                        hr(),
+                        div(
+                            id = 'demografico_titulo',
+                            actionButton(inputId = 'demografico_btn', 
+                                         label = 'Demografía', 
+                                         icon = icon('users', class = 'fa-1x'),
+                                         class = 'btn-primary btn-medium')
+                        ),
+                        hr(),
+                        div(
+                            id = 'demografico_input',
+                            pickerInput(inputId = 'sexo',
+                                        label = 'Sexo',
+                                        choices = c('Hombre' = 'H',
+                                                    'Mujer' = 'M'),
+                                        multiple = TRUE,
+                                        selected = c('H', 'M')),
+                            br(),
+                            sliderInput(inputId = 'edad',
+                                        label = 'Rango etario',
+                                        min = 0,
+                                        max = 100,
+                                        value = c(30, 60))
+                        ) %>% hidden(),
+                        hr(),
+                        div(
+                            id = 'producto_titulo',
+                            actionButton(inputId = 'producto_btn', 
+                                         label = 'Productos', 
+                                         icon = icon('boxes', class = 'fa-1x'),
+                                         class = 'btn-primary btn-medium')
+                        ),
+                        hr(),
+                        div(
+                            id = 'producto_input',
+                            switchInput(inputId = 'tiene_tc',
+                                        label = '¿Tiene TC?',
+                                        value = TRUE,
+                                        onLabel = 'Sí',
+                                        offLabel = 'No'),
+                            switchInput(inputId = 'tiene_pf',
+                                        label = '¿Tiene PF?',
+                                        value = TRUE,
+                                        onLabel = 'Sí',
+                                        offLabel = 'No'),
+                            switchInput(inputId = 'tiene_pp',
+                                        label = '¿Tiene PP?',
+                                        value = TRUE,
+                                        onLabel = 'Sí',
+                                        offLabel = 'No')
+                        ) %>% hidden(),
+                        hr(),
+                        div(
+                            id = 'cuenta_titulo',
+                            actionButton(inputId = 'cuenta_btn', 
+                                         label = 'Tipo de cuenta', 
+                                         icon = icon('wpforms', class = 'fa-1x'),
+                                         class = 'btn-primary btn-medium')
+                        ),
+                        hr(),
+                        div(
+                            id = 'cuenta_input',
+                            pickerInput(
+                                inputId = 'pick_cat_prod',
+                                label = 'Seleccione uno o más',
+                                choices = c('Clientela general' = 'GRL00003',
+                                            'Jubilados' = 'JUB00021',
+                                            'Plan Sueldo' = 'K..00021',
+                                            'Otros' = 'otros'),
+                                multiple = TRUE,
+                                selected = c('GRL00003', 'JUB00021', 'K..00021', 'otros')
+                            )
+                        ) %>% hidden(),
+                        hr()
+                        
+                        
+                    ),
+                    div(
+                        id = "input_buttons",
+                        actionButton(inputId = "filter", label = "Filtrar", icon = icon("angle-double-right"), class = 'btn-info')
+                    )
+                )
+            ),
+            column(
+                width = 9,
+                tabsetPanel(
+                    tabPanel(
+                        'Clientes',
+                        br(),
+                        div(
+                            class = "panel", 
+                            div(
+                                h4('Tabla de clientes')
+                            ),
+                            div(
+                                class = "panel-body",
+                                dataTableOutput(outputId = "clientes")
+                            ),
+                            hr(),
+                            downloadButton(outputId = 'dltableclientes', label = 'Descarga',
+                                           class = 'btn btn-success btn-sm')
+                        )
+                    ),
+                    tabPanel(
+                        'Análisis RFM',
+                        br(),
+                        h4('Recency'),
+                        hr(),
+                        plotlyOutput(outputId = 'recency_plot'),
+                        br(),
+                        h4('Frecuency'),
+                        hr(),
+                        plotlyOutput(outputId = 'frequency_plot'),
+                        br(),
+                        h4('Monetary Value'),
+                        hr(),
+                        plotlyOutput(outputId = 'mv_plot')
+                    ),
+                    # Este panel va a quedar oculto hasta que quiera sentarme a pensar por qué cuernos consume tanto
+                    # tabPanel(
+                    #     'RFM - Clusters',
+                    #     br(),
+                    #     h4('Recency'),
+                    #     hr(),
+                    #     plotlyOutput(outputId = 'recency_cluster_plot'),
+                    #     br(),
+                    #     h4('Frecuency'),
+                    #     hr(),
+                    #     plotlyOutput(outputId = 'frequency_cluster_plot'),
+                    #     br(),
+                    #     h4('Monetary Value'),
+                    #     hr(),
+                    #     plotlyOutput(outputId = 'mv_cluster_plot')
+                    # ),
+                    tabPanel(
+                        'Categorías de productos',
+                        br(),
+                        h4('Clusters'),
+                        hr(),
+                        plotlyOutput(outputId = 'cat_cluster_plot'),
+                        br(),
+                        h4('Clusters - Inverso'),
+                        hr(),
+                        plotlyOutput(outputId = 'cluster_cat_plot')
+                    ),
+                    tabPanel(
+                        'Evolución de productos',
+                        br(),
+                        h4('Plazo fijo'),
+                        hr(),
+                        plotlyOutput(outputId = 'evol_pf_plot'),
+                        br(),
+                        h4('Tarjeta de crédito'),
+                        hr(),
+                        plotlyOutput(outputId = 'evol_tc_plot'),
+                        br(),
+                        h4('Préstamos personales'),
+                        hr(),
+                        plotlyOutput(outputId = 'evol_pp_plot'),
+                        
+                        
+                    )
+                )
+                
+            )
+            
+            
+        )
+    )
+)
+# Define server logic required to draw a histogram
+server <- function(input, output, session) {
+    
+    #User input ----
+    tabla_clientes <- eventReactive(input$filter, {
+        base %>% 
+            gather(., key = 'prediccion', value = 'probabilidad', 3:5) %>% 
+            filter(prediccion == input$producto,
+                   probabilidad >= input$prob) %>% 
+            filter(Sexo %in% input$sexo) %>% 
+            filter(., between(Edad, input$edad[1], input$edad[2])) %>% 
+            filter(if (input$tiene_tc == TRUE) cant_TC >0 else cant_TC==0) %>% 
+            filter(if (input$tiene_pp == TRUE) cant_PP >0 else cant_PP==0) %>% 
+            filter(if (input$tiene_pf == TRUE) cant_PF >0 else cant_PF==0) %>% 
+            filter(cat_prod %in% input$pick_cat_prod) 
+        
+        
+        
+    })
+    
+    output$clientes <- DT::renderDataTable({
+        tabla_clientes() %>% 
+            distinct(., cliente, .keep_all = TRUE) %>% 
+            select(cliente, email, Sexo, Edad, dias_mov, cant_productos, monetary_value) %>% 
+            rename('ID' = cliente,
+                   'Email' = email,
+                   'Dias del último movimiento' = dias_mov,
+                   'Cantidad de productos' = cant_productos,
+                   'Valor monetario' = monetary_value)
+    })
+    
+    output$dltableclientes <- downloadHandler(
+        filename=function(){
+            paste('clientes-', Sys.Date(),'.xlsx', sep="")
+        },
+        content = function(file){
+            write.xlsx(tabla_clientes(), file)
+        }
+    )
+    
+    
+    output$recency_plot <- renderPlotly(
+        tabla_clientes() %>%
+            select(cliente, Clusters, dias_mov) %>% 
+            distinct(., cliente, .keep_all = TRUE) %>% 
+            plot_recency()
+    )
+    
+    output$frequency_plot <- renderPlotly(
+        tabla_clientes() %>%
+            select(cliente, Clusters, cant_productos) %>% 
+            distinct(., cliente, .keep_all = TRUE) %>%
+            plot_frecuency()
+    )
+    
+    output$mv_plot <- renderPlotly(
+        tabla_clientes() %>%
+            select(cliente, Clusters, monetary_value) %>% 
+            distinct(., cliente, .keep_all = TRUE) %>%
+            plot_mv()
+    )
+    
+    # output$recency_cluster_plot <- renderPlotly(
+    #     tabla_clientes() %>% 
+    #         select(cliente, dias_mov, Clusters) %>% 
+    #         distinct(., cliente, .keep_all = TRUE) %>% 
+    #         plot_cluster_recency()
+    # )
+    # 
+    # output$frequency_cluster_plot <- renderPlotly(
+    #     tabla_clientes() %>% 
+    #         select(cliente, cant_productos, Clusters) %>% 
+    #         distinct(., cliente, .keep_all = TRUE) %>%
+    #         plot_cluster_frequency()
+    # )
+    # 
+    # output$mv_cluster_plot <- renderPlotly(
+    #     tabla_clientes() %>% 
+    #         select(cliente, monetary_value, Clusters) %>% 
+    #         distinct(., cliente, .keep_all = TRUE) %>% 
+    #         plot_cluster_mv()
+    # )
+    
+    output$cat_cluster_plot <- renderPlotly(
+        tabla_clientes() %>% 
+            select(cliente, cat_prod, Clusters) %>% 
+            distinct(., cliente, .keep_all = TRUE) %>% 
+            plot_cat_cluster()
+    )
+    
+    output$cluster_cat_plot <- renderPlotly(
+        tabla_clientes() %>% 
+            select(cliente, cat_prod, Clusters) %>% 
+            distinct(., cliente, .keep_all = TRUE) %>% 
+            plot_cluster_cat()
+    )
+    
+    output$evol_pf_plot <- renderPlotly(
+        tabla_clientes() %>% 
+            plot_evol_pf()
+    )
+    
+    output$evol_tc_plot <- renderPlotly(
+        tabla_clientes() %>% 
+            plot_evol_tc()
+    )
+    
+    output$evol_pp_plot <- renderPlotly(
+        tabla_clientes() %>% 
+            plot_evol_pp()
+    )
+    
+    
+    output$favorite_cards <- renderUI({
+        
+        if(!is.null(tabla_clientes())) {
+            
+            cant_clientes <- (nrow(tabla_clientes()) / nrow(base))
+            
+            promedio_mv <- mean(tabla_clientes()$monetary_value)
+            
+            cluster <- tabla_clientes() %>%
+                group_by(Clusters) %>% 
+                summarise(conteo = n()) %>% 
+                arrange(desc(conteo)) %>% 
+                .[1,1] %>% 
+                as.numeric()-1
+            
+            cluster_percent <- tabla_clientes() %>%
+                group_by(Clusters) %>% 
+                summarise(conteo = n()/nrow(.)) %>% 
+                arrange(desc(conteo)) %>% 
+                .[1,2] %>% 
+                as.numeric()
+            
+            div(
+                column(
+                    width = 4,
+                    info_card(
+                        title = 'Cantidad de clientes', 
+                        value = str_glue("Relativo a base total") %>% HTML(),
+                        sub_value      = cant_clientes %>% scales::percent(accuracy = 0.01),
+                        main_icon = 'address-card',
+                        sub_icon = 'arrow-right'
+                    )
+                ),
+                
+                column(
+                    width = 4,
+                    info_card(
+                        title = 'Monetary Value', 
+                        value = str_glue("Promedio de la selección") %>% HTML(),
+                        sub_value      = promedio_mv %>% scales::dollar(),
+                        sub_icon = 'arrow-right'
+                    )
+                ),
+                
+                column(
+                    width = 4,
+                    info_card(
+                        title = 'Cluster', 
+                        value = str_glue('Predominio: Cluster ', cluster) %>% HTML(),
+                        sub_value      = cluster_percent %>% scales::percent(accuracy = 0.01),
+                        main_icon = 'connectdevelop',
+                        sub_icon = 'arrow-right'
+                    )
+                )
+            )
+        }
+        
+    })
+    
+    observeEvent(input$favorites_toggle, {
+        shinyjs::toggle(id = 'favorite_cards', anim = TRUE, animType = 'slide')
+    })
+    
+    observeEvent(input$probabilidad_btn, {
+        shinyjs::toggle(id = 'probabilidad_input', anim = TRUE, animType = 'slide')
+    })
+    
+    observeEvent(input$demografico_btn, {
+        shinyjs::toggle(id = 'demografico_input', anim = TRUE, animType = 'slide')
+    })
+    
+    observeEvent(input$producto_btn, {
+        shinyjs::toggle(id = 'producto_input', anim = TRUE, animType = 'slide')
+    })
+    
+    observeEvent(input$cuenta_btn, {
+        shinyjs::toggle(id = 'cuenta_input', anim = TRUE, animType = 'slide')
+    })
+    
+    
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
